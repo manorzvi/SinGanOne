@@ -11,7 +11,7 @@ from torchvision.utils import make_grid
 
 from models import SinGanOneModel
 from train_results import *
-from functions import calc_gradient_penalty, torch2np
+from functions import torch2np
 
 class SinGanOneTrainer():
     def __init__(self, model:SinGanOneModel, num_epochs:int, device:torch.device, lambda_grad:float, alpha:float,
@@ -144,7 +144,7 @@ class SinGanOneTrainer():
         errD_fake = output.mean()
         errD_fake.backward(retain_graph=True)
 
-        gradient_penalty = calc_gradient_penalty(self.model.netD, real, fake, self.lambda_grad, self.device)
+        gradient_penalty = self.model.gradient_penalty(real, fake)
         gradient_penalty.backward()
 
         errD = errD_real + errD_fake + gradient_penalty

@@ -85,6 +85,7 @@ class SinGanOneModel(nn.Module):
 
         self.nfc     = min(opt.nfc_init * pow(2, math.floor(scale_num / 4)), 128)
         self.min_nfc = min(opt.min_nfc_init * pow(2, math.floor(scale_num / 4)), 128)
+        self.lambda_grad  = opt.lambda_grad
 
         self.set_generator(opt)
         self.set_discriminator(opt)
@@ -166,6 +167,25 @@ class SinGanOneModel(nn.Module):
 
         self.netG.to(device)
         self.netD.to(device)
+
+    def gradient_penalty(self, real_data, fake_data):
+        alpha = torch.rand(1, 1, dtype=torch.float64)
+        alpha = alpha.expand(real_data.size())
+        alpha = alpha.to(self.device)
+
+        interpolates = alpha * real_data + ((1 - alpha) * fake_data)
+
+        interpolates = interpolates.to(self.device)
+        interpolates = torch.autograd.Variable(interpolates, requires_grad=True)
+
+        disc_interpolates = self.netD(interpolates)
+
+        gradients = torch.autograd.grad(outputs=disc_interpolates, inputs=interpolates,
+                                        grad_outputs=torch.ones(disc_interpolates.size()).to(self.device),
+                                        create_graph=True, retain_graph=True, only_inputs=True)[0]
+        # LAMBDA = 1
+        gradient_penalty = ((gradients.norm(2, dim=1) - 1) ** 2).mean() * self.lambda_grad
+        return gradient_penalty
 
     def __str__(self):
         ret_str  = '|' + '-'*20 + 'Generator' + '-'*20 + '|' + '\n'
