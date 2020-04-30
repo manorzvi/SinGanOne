@@ -59,9 +59,14 @@ def post_config(opt):
     random.seed(opt.seed)
     torch.manual_seed(opt.seed)
 
-    opt.pad_noise = int(((opt.ker_size - 1) * opt.num_layer) / 2)
-    opt.pad_image = int(((opt.ker_size - 1) * opt.num_layer) / 2)
-
+    #TODO: consider stride and padding in the following calculation
+    if opt.ker_size % 2 == 0:
+        opt.pad_noise = int((opt.ker_size - 1) * opt.num_layer)
+        opt.pad_image = int((opt.ker_size - 1) * opt.num_layer)
+    else: # opt.ker_size % 2 != 0
+        opt.pad_noise = int(((opt.ker_size - 1) * opt.num_layer) / 2)
+        opt.pad_image = int(((opt.ker_size - 1) * opt.num_layer) / 2)
+    
     opt.nfc_init = opt.nfc
     opt.min_nfc_init = opt.min_nfc
 
