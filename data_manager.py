@@ -10,9 +10,8 @@ from functions import read_image, create_reals_pyramid, adjust_scales2image, tor
 from exceptions import SinGanOne_PathNotFound, SinGanOne_NonTorchDevice
 from config import get_arguments, post_config
 
-
 class SinGanOne_Dataset(Dataset):
-    def __init__(self, opt, curr_scale):
+    def __init__(self, opt):
         super(SinGanOne_Dataset, self).__init__()
 
         if not isinstance(opt.device,torch.device):
@@ -32,24 +31,26 @@ class SinGanOne_Dataset(Dataset):
         self.m_image = nn.ZeroPad2d(int(opt.pad_image))
         self.len = opt.niter
 
-        self.set_curr_scale(curr_scale)
+    def set_z_rec(self):
+        """
+        Z Reconstruction fixed during training.
+        """
+        pass
+
+    def __len__(self):
+        return self.len
+
+    def __getitem__(self, item):
+        pass
+
+class SinGanOne_Dataset_ScaleZero(SinGanOne_Dataset):
+    def __init__(self, opt):
+        super(SinGanOne_Dataset_ScaleZero, self).__init__(opt)
+
+        self.curr_scale = 0
+        self.real = self.reals[0]
+
         self.set_z_rec()
-
-
-        if opt.plotting:
-            nrows = int(np.floor(np.sqrt(len(self.reals))))
-            ncols = int(np.ceil(np.sqrt(len(self.reals))))
-            fig,axes = plt.subplots(nrows,ncols)
-            fig.tight_layout()
-            axes = axes.reshape(-1)
-            for i,r in enumerate(self.reals):
-                axes[i].imshow(torch2np(r))
-                axes[i].set_title(f'Scale {i}')
-            plt.show()
-            fig,ax = plt.subplots()
-            ax.imshow(torch2np(self.z_rec)[:,:,0])
-            ax.set_title(f'Z Reconstruction')
-            plt.show()
 
     def set_z_rec(self):
         """
@@ -60,14 +61,8 @@ class SinGanOne_Dataset(Dataset):
         self.z_rec = self.m_noise(self.z_rec.expand(3, self.reals[self.curr_scale].shape[1],
                                                     self.reals[self.curr_scale].shape[2]))
 
-    def set_curr_scale(self, curr_scale):
-        self.curr_scale = curr_scale
-
-    def __len__(self):
-        return self.len
-
     def __getitem__(self, item):
-        real  = self.reals[self.curr_scale]
+        real  = self.real
         z_rec = self.z_rec
 
         if item == 0:
